@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日知识</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;line-height:1.7;min-height:100vh}
+.container{max-width:820px;margin:0 auto;padding:24px 20px 80px}
+header{padding:40px 0 24px;border-bottom:1px solid #21262d;margin-bottom:28px}
+header h1{font-size:26px;font-weight:700;background:linear-gradient(135deg,#58a6ff,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:inline-block}
+header .sub{color:#8b949e;font-size:13px;margin-top:4px}
+.stats-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;font-size:13px}
+.stat-item{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:6px 14px;display:flex;align-items:center;gap:6px}
+.stat-item .num{color:#58a6ff;font-weight:700;font-size:15px}
+.stat-item .lbl{color:#8b949e}
+.stats-bar{width:100%;margin-top:8px;background:#21262d;border-radius:10px;height:6px;overflow:hidden}
+.stats-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#3fb950,#58a6ff);transition:width .4s ease}
+.section-title{font-size:16px;font-weight:600;margin:28px 0 14px;color:#f0f6fc;display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid #21262d}
+.section-title .badge{font-size:11px;padding:2px 10px;border-radius:10px;font-weight:400}
+.badge-today{background:#1f6feb33;color:#58a6ff;border:1px solid #1f6feb55}
+.badge-past{background:#21262d;color:#8b949e;border:1px solid #30363d}
+.kcard{background:#161b22;border:1px solid #30363d;border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.kcard:hover{border-color:#58a6ff55}
+.khead{padding:13px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;user-select:none}
+.khead .tag{font-size:11px;padding:2px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:2px;font-weight:500}
+.tag-work{background:#1f6feb33;color:#58a6ff}
+.tag-life{background:#0d442966;color:#7ee787}
+.tag-science{background:#6e40c966;color:#d2a8ff}
+.tag-health{background:#3fb95033;color:#7ee787}
+.tag-tool{background:#d2992233;color:#e3b341}
+.khead .ktitle{flex:1;font-size:14px;font-weight:500;color:#e6edf3;line-height:1.5}
+.khead .karrow{color:#484f58;font-size:12px;transition:transform .25s;flex-shrink:0;margin-top:3px}
+.kbody{display:none;padding:0 16px 16px;border-top:1px solid #21262d}
+.kbody.open{display:block}
+.kbody .ksum{color:#8b949e;font-size:13px;margin:12px 0 10px}
+.kbody .kdetail{color:#c9d1d9;font-size:14px;line-height:1.8}
+.kbody .kdetail h4{color:#58a6ff;font-size:14px;margin:14px 0 6px;font-weight:600}
+.kbody .kdetail h4:first-child{margin-top:0}
+.kbody .kdetail ul{padding-left:18px;margin:6px 0}
+.kbody .kdetail li{margin-bottom:4px;color:#c9d1d9}
+.kbody .kdetail li::marker{color:#484f58}
+.kbody .kdetail p{margin:6px 0}
+.kbody .kdetail code{background:#21262d;padding:1px 5px;border-radius:3px;font-size:13px;color:#f0883e}
+.kbody .kdetail b{color:#f0f6fc}
+.kbody .ksource{color:#484f58;font-size:12px;margin-top:10px;padding-top:8px;border-top:1px solid #21262d;word-break:break-all}
+.kfoot{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid #21262d}
+.btn-s{display:inline-flex;align-items:center;gap:4px;padding:4px 14px;border-radius:6px;border:1px solid;cursor:pointer;font-size:12px;font-weight:500;transition:all .2s;background:transparent}
+.btn-learn{border-color:#30363d;color:#8b949e}
+.btn-learn:hover{border-color:#58a6ff;color:#58a6ff}
+.btn-learned{border-color:#3fb950;color:#7ee787;background:#3fb95022}
+.btn-learned:hover{background:#3fb95044}
+.btn-unlearn{border-color:#f85149;color:#ff7b72;background:#f8514922}
+.btn-unlearn:hover{background:#f8514944}
+.kfoot .kdate{color:#484f58;font-size:11px;margin-left:auto}
+#arch-search{width:100%;padding:10px 16px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:14px;margin-bottom:14px;outline:none;transition:border-color .2s}
+#arch-search:focus{border-color:#58a6ff}
+#arch-search::placeholder{color:#484f58}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.flt{padding:4px 12px;border-radius:14px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;font-size:12px;transition:all .2s}
+.flt:hover{border-color:#58a6ff;color:#58a6ff}
+.flt.on{background:#1f6feb33;border-color:#58a6ff;color:#58a6ff}
+.day-group{margin-bottom:18px}
+.day-hdr{font-size:14px;font-weight:600;color:#f0f6fc;margin-bottom:8px;padding:4px 0;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:8px}
+.day-hdr .cnt{font-size:11px;color:#484f58;font-weight:400}
+.day-empty{text-align:center;padding:40px;color:#484f58;font-size:14px}
+@media(max-width:600px){.container{padding:16px 12px 80px}header{padding:28px 0 18px}header h1{font-size:22px}.khead{padding:12px 14px}.kbody{padding:0 14px 14px}}
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+// ======================== 数据 ========================
+var DATA = {
+  "version": 1,
+  "last_updated": "2026-06-24",
+  "today": "2026-06-24",
+  "knowledge": {
+    "2026-06-24": [
+      {
+        "id": "work_001",
+        "cat": "职场技能",
+        "title": "金字塔原理：30秒说清任何复杂问题",
+        "summary": "麦肯锡经典沟通模型，结论先行、以上统下，让汇报/写作逻辑清晰",
+        "detail": "<h4>什么是金字塔原理</h4><p>由麦肯锡首位女性顾问芭芭拉·明托提出，核心思想：任何复杂问题都可以拆解为一个中心论点+若干支撑论据，像金字塔一样层层展开。</p><h4>核心原则</h4><ul><li><b>结论先行：</b>先说结论/结果，再说理由和细节——领导没耐心听你绕弯子</li><li><b>以上统下：</b>上层观点必须能概括下层内容，下层内容必须支撑上层观点</li><li><b>MECE原则：</b>同一层的论据要「相互独立、完全穷尽」——不重叠、不遗漏</li><li><b>横向归类：</b>同一层的论据按逻辑顺序排列（时间顺序/结构顺序/重要性顺序）</li></ul><h4>实操步骤（以工作汇报为例）</h4><ul><li><b>第一步：确定中心论点</b>——你想让听者记住的唯一一句话。例：『Q2用户增长不及预期，建议调整投放策略』</li><li><b>第二步：列出3-5个支撑论据</b>——为什么得出这个结论？例：①渠道A获客成本上升40% ②渠道B转化率下降25% ③竞品新策略抢占15%份额</li><li><b>第三步：每个论据再拆解</b>——如果需要，每个支撑点下面再列2-3个数据/事实</li><li><b>第四步：检查MECE</b>——论据之间有没有重叠？有没有遗漏重要因素？</li></ul><h4>参考来源</h4><p>《金字塔原理》芭芭拉·明托（麦肯锡40年经典培训教材）| 36氪「职场思维」专栏</p>",
+        "source": "《金字塔原理》芭芭拉·明托 | 36氪",
+        "tags": ["沟通","汇报","逻辑思维"]
+      },
+      {
+        "id": "life_001",
+        "cat": "生活技巧",
+        "title": "冰箱食材分区保存指南",
+        "summary": "不同食材放对位置，保鲜期延长3-5天，减少浪费",
+        "detail": "<h4>冰箱温度分布规律</h4><p>冰箱内部温度并非均匀：下层最冷（0-4°C），上层次之（4-6°C），门架最暖也最不稳定（6-10°C），抽屉湿度最高。</p><h4>最佳分区方案</h4><ul><li><b>下层（最冷区）：</b>生肉、生鱼、海鲜——用密封盒/保鲜袋装好，防止血水滴漏污染其他食物</li><li><b>上层（稳定区）：</b>剩菜、熟食、乳制品、鸡蛋——开封后3天内吃完</li><li><b>抽屉（高湿区）：</b>蔬菜、水果——用厨房纸包好再放（吸水防烂），不要洗完直接放</li><li><b>门架（最暖区）：</b>饮料、酱料、调味品——不要把鸡蛋/牛奶放这里（温度波动大，易变质）</li></ul><h4>各类食材保存要点</h4><ul><li><b>绿叶菜：</b>擦干水分→厨房纸包裹→放入保鲜袋扎口→冷藏可保鲜5-7天</li><li><b>土豆/洋葱/大蒜：</b>放阴凉通风处（不要放冰箱！低温会让淀粉转化为糖，口感变差且易发芽）</li><li><b>西红柿：</b>室温存放（冷藏会破坏细胞壁，失去风味），切开的用保鲜膜封切口冷藏</li><li><b>菌菇：</b>纸袋保存（塑料袋不透气，2天就发粘）</li><li><b>香蕉/芒果/牛油果：</b>室温催熟，熟了再放冰箱延缓腐烂</li><li><b>面包：</b>吃不完冷冻保存（冷藏会加速淀粉老化变干硬），吃时烤箱/空气炸锅复热</li></ul><h4>参考来源</h4><p>美国食品药品监督管理局(USDA)食品安全指南 | 下厨房社区经验整理 | 《食物与厨艺》Harold McGee</p>",
+        "source": "USDA食品安全指南 | 下厨房",
+        "tags": ["厨房","食材保存","冰箱"]
+      },
+      {
+        "id": "science_001",
+        "cat": "科普常识",
+        "title": "为什么天空是蓝色的？——瑞利散射",
+        "summary": "阳光穿过大气层时，蓝光被散射到各个方向，所以我们看到天空是蓝色的",
+        "detail": "<h4>一句话原理</h4><p>太阳光由七色光谱组成（红橙黄绿青蓝紫）。当阳光穿过地球大气层时，会与空气分子和微小颗粒发生碰撞而向四面八方散射——这个现象叫<strong>瑞利散射</strong>。蓝光波长较短（约450nm），散射效率是红光（约700nm）的约10倍，所以天空呈现蓝色。</p><h4>关键事实</h4><ul><li><b>为什么不是紫色？</b>——紫光波长更短散射更强，但太阳光谱紫光能量少，人眼对蓝光更敏感，臭氧层吸收部分紫光</li><li><b>为什么日出日落是红色？</b>——阳光穿过的大气层更厚，蓝光被散射殆尽，只剩红光穿透</li><li><b>为什么晴天天空更蓝？</b>——水汽和污染物少，散射更纯净。阴天灰白色是因为水汽散射所有波长的光</li><li><b>为什么月球天空是黑色的？</b>——月球没有大气层，阳光直线传播无散射</li></ul><h4>实验验证</h4><p>玻璃杯中装满水，滴入几滴牛奶，强光手电从一侧照射——侧面看水呈淡蓝色（散射光），对面看偏橙红色（透射光）</p><h4>参考来源</h4><p>维基百科「瑞利散射」词条 | 果壳网科普文 | 英国物理学会《Physics Education》</p>",
+        "source": "维基百科「瑞利散射」 | 果壳网",
+        "tags": ["物理","光学","自然现象"]
+      },
+      {
+        "id": "health_001",
+        "cat": "健康养生",
+        "title": "每天应该喝多少水？科学饮水指南",
+        "summary": "『每天8杯水』并不适合所有人，根据体重和活动量精确计算",
+        "detail": "<h4>核心事实</h4><p>人体约60%是水分，每天通过排尿（约1500ml）、出汗（约500ml）、呼吸（约400ml）、排便（约100ml）共流失约2500ml水分。需要通过饮水+食物补水来平衡。</p><h4>科学计算方法</h4><ul><li><b>基础公式：</b>体重(kg)×30-35ml = 每日总需水量</li><li><b>示例：</b>60kg≈1.8L（约7-8杯）、80kg≈2.4L（约10杯）</li><li><b>调整：</b>运动后每小时+500ml、哺乳期+700ml、高温环境+500-1000ml</li></ul><h4>判断方法：看尿液颜色</h4><p>淡黄色=正常，深黄色=缺水，透明无色=喝太多了</p><h4>怎么喝更健康</h4><ul><li><b>少量多次：</b>每次150-200ml，每小时不超过800ml（短时大量喝水可能引起水中毒）</li><li><b>早晨第一杯：</b>起床后喝200ml温开水</li><li><b>饭前半小时：</b>增加饱腹感，有助控制食量</li></ul><h4>参考来源</h4><p>丁香医生「每天喝多少水」| 健康时报「科学饮水指南」| 梅奥诊所(Mayo Clinic) hydration guidelines</p>",
+        "source": "丁香医生 | 健康时报 | Mayo Clinic",
+        "tags": ["饮水","健康习惯","营养"]
+      },
+      {
+        "id": "tool_001",
+        "cat": "效率工具",
+        "title": "Everything：秒搜电脑文件的终极神器",
+        "summary": "Windows上最快的文件搜索工具，100GB硬盘也能1秒出结果",
+        "detail": "<h4>为什么需要Everything</h4><p>Windows自带搜索慢如蜗牛。Everything利用NTFS的USN日志直接读取文件记录，首次建立索引仅数秒，搜索实时响应。</p><h4>安装</h4><p>官网 voidtools.com 下载（仅1.5MB，有绿色免安装版）</p><h4>基本用法</h4><ul><li><b>即时搜索：</b>打开软件→输入关键词→结果实时出现</li><li><b>通配符：</b><code>*.pdf</code>所有PDF、<code>报告*</code>以报告开头</li><li><b>布尔：</b><code>报告 !旧版</code>排除、<code>预算|决算</code>二选一、空格=AND</li><li><b>路径：</b><code>D:\\工作\\</code>限定文件夹</li><li><b>类型：</b><code>ext:xlsx</code>、<code>ext:pdf;docx</code></li><li><b>日期：</b><code>dm:2026-06-01</code>（修改日期）</li><li><b>大小：</b><code>size:>10mb</code>、<code>size:1mb..10mb</code></li></ul><h4>高级技巧</h4><ul><li><b>全局快捷键：</b>设置Ctrl+Alt+F，任何界面按一下直接弹出</li><li><b>HTTP服务器：</b>开启后可在手机浏览器访问电脑文件</li><li><b>EFU文件列表：</b>导出U盘文件列表，拔掉设备后仍可搜索</li></ul><h4>参考来源</h4><p>voidtools.com 官方文档 | 小众软件「Everything 完全指南」</p>",
+        "source": "voidtools.com 官网 | 小众软件",
+        "tags": ["Windows","文件搜索","效率工具"]
+      }
+    ]
+  },
+  "archive": {}
+};
+
+// ======================== 逻辑 ========================
+function fmtDate(s){var p=s.split('-');return p[0]+'年'+parseInt(p[1])+'月'+parseInt(p[2])+'日'}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function getLS(){try{return JSON.parse(localStorage.getItem('dk_learned')||'{}')}catch(e){return{}}}
+function setLS(s){localStorage.setItem('dk_learned',JSON.stringify(s))}
+
+function toggleLearn(id){
+  var ls=getLS(),cur=ls[id];
+  if(cur==='learned')ls[id]='unlearned';
+  else if(cur==='unlearned')delete ls[id];
+  else ls[id]='learned';
+  setLS(ls);
+  render();
+}
+
+var fltCat='all',fltSearch='';
+
+function render(){
+  var app=document.getElementById('app');
+  if(!app)return;
+  var today=DATA.today,items=DATA.knowledge[today]||[],ls=getLS();
+  var arch=DATA.archive||{};
+
+  var tl=0,tot=0;
+  items.forEach(function(it){tot++;if(ls[it.id]==='learned')tl++});
+  var totalL=0;
+  items.forEach(function(it){if(ls[it.id]==='learned')totalL++});
+  Object.keys(arch).forEach(function(k){(arch[k]||[]).forEach(function(it){if(ls[it.id]==='learned')totalL++})});
+
+  var html='<header>'
+    +'<h1>📖 每日知识</h1>'
+    +'<div class="sub">每天5个知识点·持续丰富自己·'+fmtDate(today)+'</div>'
+    +'<div class="stats-row">'
+    +'<span class="stat-item"><span class="num">'+tl+'</span><span class="lbl"> / '+tot+' 今日已学</span></span>'
+    +'<span class="stat-item"><span class="num">'+totalL+'</span><span class="lbl">个知识点已学习</span></span>'
+    +'<span class="stat-item"><span class="num">'+(Object.keys(arch).length+(items.length>0?1:0))+'</span><span class="lbl">天记录</span></span>'
+    +'</div>'
+    +'<div class="stats-bar"><div class="stats-fill" style="width:'+(tot>0?(tl/tot*100):0)+'%"></div></div>'
+    +'</header>';
+
+  // today
+  html+='<div class="section-title">📌 今日知识 <span class="badge badge-today">'+items.length+'条</span></div>';
+  items.forEach(function(it){html+=cardHtml(it,today,true,ls)});
+
+  // archive
+  var dates=Object.keys(arch).sort().reverse();
+  if(dates.length>0){
+    html+='<div class="section-title" style="margin-top:36px">📅 往期知识 <span class="badge badge-past">'+dates.length+'天</span></div>';
+    html+='<input id="arch-search" type="text" placeholder="🔍 搜索往期知识（按关键词、分类）" value="'+esc(fltSearch)+'" oninput="onSearch(this.value)">';
+    var cats={};for(var i=0;i<items.length;i++)cats[items[i].cat]=1;
+    Object.keys(arch).forEach(function(k){(arch[k]||[]).forEach(function(it){cats[it.cat]=1})});
+    html+='<div class="filter-row"><button class="flt '+(fltCat==='all'?'on':'')+'" onclick="setFlt(\'all\')">全部</button>';
+    Object.keys(cats).sort().forEach(function(c){html+='<button class="flt '+(fltCat===c?'on':'')+'" onclick="setFlt(\''+c+'\')">'+c+'</button>'});
+    html+='</div>';
+
+    var any=false;
+    dates.forEach(function(dk){
+      var di=(arch[dk]||[]).filter(function(it){
+        if(fltCat!=='all'&&it.cat!==fltCat)return false;
+        if(fltSearch){var q=fltSearch.toLowerCase();return it.title.toLowerCase().indexOf(q)!==-1||it.cat.toLowerCase().indexOf(q)!==-1||it.summary.toLowerCase().indexOf(q)!==-1}
+        return true;
+      });
+      if(!di.length)return;
+      any=true;
+      html+='<div class="day-group"><div class="day-hdr">📅 '+fmtDate(dk)+'<span class="cnt"> '+di.length+'条</span></div>';
+      di.forEach(function(it){html+=cardHtml(it,dk,false,ls)});
+      html+='</div>';
+    });
+    if(!any)html+='<div class="day-empty">🔍 没有匹配的内容</div>';
+  }else{
+    html+='<div class="day-empty">📭 还没有往期知识——明天自动归档</div>';
+  }
+
+  app.innerHTML=html;
+
+  // bind click
+  var hs=document.querySelectorAll('.khead');
+  for(var i=0;i<hs.length;i++){
+    (function(el){el.addEventListener('click',function(){
+      var body=this.nextElementSibling,arrow=this.querySelector('.karrow');
+      if(body.classList.contains('open')){
+        body.classList.remove('open');arrow.style.transform='rotate(0deg)';
+      }else{
+        var all=document.querySelectorAll('.kbody.open');
+        for(var j=0;j<all.length;j++){all[j].classList.remove('open');all[j].previousElementSibling.querySelector('.karrow').style.transform='rotate(0deg)';}
+        body.classList.add('open');arrow.style.transform='rotate(90deg)';
+        setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
+      }
+    })})(hs[i]);
+  }
+}
+
+function cardHtml(it,ds,isToday,ls){
+  var tc={'职场技能':'tag-work','生活技巧':'tag-life','科普常识':'tag-science','健康养生':'tag-health','效率工具':'tag-tool'}[it.cat]||'tag-work';
+  var st=ls[it.id];
+  var bc=st==='learned'?'border-color:#3fb950;color:#7ee787;background:#3fb95022':st==='unlearned'?'border-color:#f85149;color:#ff7b72;background:#f8514922':'border-color:#30363d;color:#8b949e';
+  var bt=st==='learned'?'✅ 已学习':st==='unlearned'?'❌ 未学习':'○ 标记学习';
+  return '<div class="kcard" data-id="'+it.id+'">'
+    +'<div class="khead"><span class="tag '+tc+'">'+it.cat+'</span><span class="ktitle">'+esc(it.title)+'</span><span class="karrow">▸</span></div>'
+    +'<div class="kbody"><div class="ksum">'+esc(it.summary)+'</div><div class="kdetail">'+it.detail+'</div>'
+    +'<div class="ksource">📌 来源：'+esc(it.source)+'</div>'
+    +'<div class="kfoot">'
+    +'<span onclick="event.stopPropagation();toggleLearn(\''+it.id+'\')" style="display:inline-flex;align-items:center;gap:4px;padding:4px 14px;border-radius:6px;border:1px solid;cursor:pointer;font-size:12px;font-weight:500;background:transparent;'+bc+'">'+bt+'</span>'
+    +'<span class="kdate">'+(isToday?'今日':fmtDate(ds))+'</span></div></div></div>';
+}
+
+function onSearch(v){fltSearch=v;render()}
+function setFlt(c){fltCat=c;render()}
+
+render();
+</script>
+</body>
+</html>
