@@ -53,7 +53,14 @@ def get_max_ids(data):
 def call_deepseek(prompt):
     if not API_KEY:
         print("ERROR: DEEPSEEK_KEY 未设置")
-        sys.exit(1)
+        # Try to read from config.py if exists (for local testing)
+        if os.path.exists("config.py"):
+            try:
+                exec(open("config.py").read())
+                API_KEY = globals().get("DEEPSEEK_KEY", "")
+            except: pass
+        if not API_KEY:
+            sys.exit(1)
     resp = requests.post(
         "https://api.deepseek.com/chat/completions",
         headers={
