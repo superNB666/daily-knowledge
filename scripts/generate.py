@@ -51,6 +51,7 @@ def get_max_ids(data):
     return max_ids
 
 def call_deepseek(prompt):
+    global API_KEY
     if not API_KEY:
         print("ERROR: DEEPSEEK_KEY 未设置")
         # Try to read from config.py if exists (for local testing)
