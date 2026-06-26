@@ -61,6 +61,30 @@ header .sub{color:#8b949e;font-size:13px;margin-top:4px}
 .flt{padding:4px 12px;border-radius:14px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;font-size:12px;transition:all .2s}
 .flt:hover{border-color:#58a6ff;color:#58a6ff}
 .flt.on{background:#1f6feb33;border-color:#58a6ff;color:#58a6ff}
+/* 设置面板 */
+#settings-btn{background:none;border:none;color:#484f58;cursor:pointer;font-size:18px;padding:4px;margin-left:auto;transition:color .2s;vertical-align:middle}
+#settings-btn:hover{color:#58a6ff}
+.settings-panel{display:none;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;margin-bottom:28px}
+.settings-panel.open{display:block}
+.settings-panel h3{font-size:15px;color:#f0f6fc;margin-bottom:14px}
+.settings-panel label{display:block;color:#8b949e;font-size:13px;margin-bottom:4px}
+.settings-panel input[type=number]{width:80px;padding:6px 10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;outline:none}
+.settings-panel input[type=number]:focus{border-color:#58a6ff}
+.settings-panel input[type=password]{width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:13px;outline:none;margin-bottom:12px}
+.settings-panel input[type=password]:focus{border-color:#58a6ff}
+.settings-row{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.settings-row span{color:#8b949e;font-size:14px}
+.btn-set{padding:8px 20px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.btn-set.primary{background:#238636;color:#fff}
+.btn-set.primary:hover{background:#2ea043}
+.btn-set.primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-set.secondary{background:#21262d;color:#c9d1d9;border:1px solid #30363d}
+.btn-set.secondary:hover{background:#30363d}
+.btn-set.danger{background:#da3633;color:#fff;margin-left:8px}
+.btn-set.danger:hover{background:#f85149}
+.set-status{font-size:12px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none}
+.set-status.ok{display:block;background:#23863622;color:#7ee787;border:1px solid #3fb95055}
+.set-status.err{display:block;background:#da363322;color:#ff7b72;border:1px solid #f8514955}
 .day-group{margin-bottom:18px}
 .day-hdr{font-size:14px;font-weight:600;color:#f0f6fc;margin-bottom:8px;padding:4px 0;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:8px}
 .day-hdr .cnt{font-size:11px;color:#484f58;font-weight:400}
@@ -250,7 +274,10 @@ function render(){
   Object.keys(arch).forEach(function(k){(arch[k]||[]).forEach(function(it){if(ls[it.id]==='learned')totalL++})});
 
   var html='<header>'
+    +'<div style="display:flex;align-items:center">'
     +'<h1>📖 每日知识</h1>'
+    +'<button id="settings-btn" onclick="toggleSettings()" title="设置">⚙️</button>'
+    +'</div>'
     +'<div class="sub">每天5个知识点·持续丰富自己·'+fmtDate(today)+'</div>'
     +'<div class="stats-row">'
     +'<span class="stat-item"><span class="num">'+tl+'</span><span class="lbl"> / '+tot+' 今日已学</span></span>'
@@ -258,7 +285,24 @@ function render(){
     +'<span class="stat-item"><span class="num">'+(Object.keys(arch).length+(items.length>0?1:0))+'</span><span class="lbl">天记录</span></span>'
     +'</div>'
     +'<div class="stats-bar"><div class="stats-fill" style="width:'+(tot>0?(tl/tot*100):0)+'%"></div></div>'
-    +'</header>';
+    +'</header>'
+    +'<div class="settings-panel" id="settings-panel">'
+    +'<h3>⚙️ 设置推送时间</h3>'
+    +'<label>推送时间（北京时间）</label>'
+    +'<div class="settings-row">'
+    +'<input type="number" id="set-hour" min="0" max="23" value="9"> <span>时</span>'
+    +'<input type="number" id="set-minute" min="0" max="59" value="0"> <span>分</span>'
+    +'<span style="color:#484f58;font-size:12px">（当前: 每天 9:00）</span>'
+    +'</div>'
+    +'<label>GitHub Token（需要 repo + workflow 权限）</label>'
+    +'<input type="password" id="gh-token" placeholder="github_pat_...">'
+    +'<div class="settings-row">'
+    +'<button class="btn-set primary" id="btn-save-time" onclick="saveTime()">💾 保存时间</button>'
+    +'<button class="btn-set secondary" onclick="runNow()">▶️ 立即更新</button>'
+    +'<button class="btn-set danger" onclick="clearToken()">🗑️ 清除 Token</button>'
+    +'</div>'
+    +'<div class="set-status" id="set-status"></div>'
+    +'</div>';
 
   // today
   html+='<div class="section-title">📌 今日知识 <span class="badge badge-today">'+items.length+'条</span></div>';
@@ -328,6 +372,115 @@ function cardHtml(it,ds,isToday,ls){
 
 function onSearch(v){fltSearch=v;render()}
 function setFlt(c){fltCat=c;render()}
+
+// ======================== 设置面板 ========================
+var GITHUB_OWNER = 'superNB666';
+var GITHUB_REPO = 'daily-knowledge';
+
+function toggleSettings(){
+  var p=document.getElementById('settings-panel');
+  p.classList.toggle('open');
+  // 加载已保存的 token 和时间
+  var savedToken=localStorage.getItem('dk_gh_token');
+  if(savedToken) document.getElementById('gh-token').value=savedToken;
+  var savedHour=localStorage.getItem('dk_sched_hour');
+  var savedMin=localStorage.getItem('dk_sched_min');
+  if(savedHour!==null) document.getElementById('set-hour').value=savedHour;
+  if(savedMin!==null) document.getElementById('set-minute').value=savedMin;
+}
+
+function showStatus(msg,type){
+  var s=document.getElementById('set-status');
+  s.textContent=msg;
+  s.className='set-status '+(type||'ok');
+  if(type!=='loading') setTimeout(function(){s.className='set-status'},5000);
+}
+
+function clearToken(){
+  localStorage.removeItem('dk_gh_token');
+  document.getElementById('gh-token').value='';
+  showStatus('Token 已清除','ok');
+}
+
+function saveTime(){
+  var btn=document.getElementById('btn-save-time');
+  btn.disabled=true;
+  showStatus('正在设置...','loading');
+  var token=document.getElementById('gh-token').value.trim();
+  var hour=parseInt(document.getElementById('set-hour').value);
+  var minute=parseInt(document.getElementById('set-minute').value);
+  if(!token){showStatus('请先输入 GitHub Token','err');btn.disabled=false;return}
+  if(isNaN(hour)||hour<0||hour>23){showStatus('小时请输入 0-23','err');btn.disabled=false;return}
+  if(isNaN(minute)||minute<0||minute>59){showStatus('分钟请输入 0-59','err');btn.disabled=false;return}
+
+  // 保存到 localStorage
+  localStorage.setItem('dk_gh_token',token);
+  localStorage.setItem('dk_sched_hour',hour);
+  localStorage.setItem('dk_sched_min',minute);
+
+  // 调用 GitHub API 触发 set-schedule 工作流
+  var url='https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/actions/workflows/set-schedule.yml/dispatches';
+  fetch(url,{
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+token,
+      'Accept':'application/vnd.github+json',
+      'Content-Type':'application/json',
+      'User-Agent':'daily-knowledge-web'
+    },
+    body:JSON.stringify({
+      ref:'main',
+      inputs:{hour:hour,minute:minute}
+    })
+  }).then(function(r){
+    if(r.status===204){
+      showStatus('✅ 设置成功！下次推送将改为每天 '+String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0'),'ok');
+    }else if(r.status===401||r.status===403){
+      return r.json().then(function(d){
+        showStatus('❌ Token 无效或权限不足: '+(d.message||'请检查 token 权限（需要 repo+workflow）'),'err');
+      });
+    }else{
+      return r.text().then(function(t){
+        showStatus('❌ 失败 ('+r.status+'): '+t.slice(0,100),'err');
+      });
+    }
+  }).catch(function(e){
+    showStatus('❌ 网络错误: '+e.message,'err');
+  }).finally(function(){
+    btn.disabled=false;
+  });
+}
+
+function runNow(){
+  showStatus('正在触发更新...','loading');
+  var token=document.getElementById('gh-token').value.trim();
+  if(!token){showStatus('请先输入 GitHub Token','err');return}
+  var url='https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/actions/workflows/daily-update.yml/dispatches';
+  fetch(url,{
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+token,
+      'Accept':'application/vnd.github+json',
+      'Content-Type':'application/json',
+      'User-Agent':'daily-knowledge-web'
+    },
+    body:JSON.stringify({ref:'main'})
+  }).then(function(r){
+    if(r.status===204){
+      showStatus('✅ 已触发更新！约2分钟后网站刷新即可看到新内容','ok');
+    }else if(r.status===401||r.status===403){
+      return r.json().then(function(d){
+        showStatus('❌ Token 无效或权限不足: '+(d.message||'请检查 token 权限'),'err');
+      });
+    }else{
+      return r.text().then(function(t){
+        showStatus('❌ 失败 ('+r.status+'): '+t.slice(0,100),'err');
+      });
+    }
+  }).catch(function(e){
+    showStatus('❌ 网络错误: '+e.message,'err');
+  });
+}
 
 render();
 </script>

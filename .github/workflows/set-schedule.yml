@@ -1,0 +1,35 @@
+name: 设置定时时间
+on:
+  workflow_dispatch:
+    inputs:
+      hour:
+        description: 推送时间 - 小时 (0-23)
+        required: true
+        type: number
+        default: 9
+      minute:
+        description: 推送时间 - 分钟 (0-59)
+        required: true
+        type: number
+        default: 0
+
+jobs:
+  set-schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 修改定时
+        env:
+          SCHED_HOUR: ${{ inputs.hour }}
+          SCHED_MINUTE: ${{ inputs.minute }}
+        run: python scripts/set_schedule.py "$SCHED_HOUR" "$SCHED_MINUTE"
+      - name: 提交修改
+        run: |
+          git config user.name "每日知识机器人"
+          git config user.email "bot@daily-knowledge.org"
+          git add .github/workflows/daily-update.yml
+          git commit -m "⏰ 更新推送时间 [skip ci]" || echo "无变化"
+          git push
