@@ -83,36 +83,67 @@ def call_deepseek(prompt):
         sys.exit(1)
     return resp.json()["choices"][0]["message"]["content"]
 
-def parse_json(text):
-    text = text.strip()
-    if text.startswith("```"):
-        text = re.sub(r'^```(?:json)?\s*', '', text)
-        text = re.sub(r'\s*```$', '', text)
+def repair_json(raw):
+    """尝试修复 LLM 输出中常见的 JSON 格式问题"""
+    # 去掉不可见控制字符（保留换行和制表符）
+    raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw)
+    # 尝试直接解析
     try:
-        return json.loads(text)
+        return json.loads(raw)
     except:
         pass
+    # 尝试压缩为单行（去掉字符串外部的换行）
+    flat = re.sub(r'\s+', ' ', raw).strip()
+    try:
+        return json.loads(flat)
+    except:
+        pass
+    # 修复 HTML 属性中的引号
+    fixed = re.sub(r'(?<=<[^>]*?)"(?=[^>]*?[ />])', "'", raw)
+    try:
+        return json.loads(fixed)
+    except:
+        pass
+    # 最后尝试：用 json 标准库的 strict=False
+    try:
+        return json.loads(raw, strict=False)
+    except:
+        pass
+    return None
+
+def parse_json(text):
+    text = text.strip()
+    # 去掉 markdown 代码块标记
+    text = re.sub(r'^```(?:json)?\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    text = text.strip()
+    # 标准解析
+    item = repair_json(text)
+    if item:
+        return item
+    # 用正则提取最外层 {} 并尝试修复
     m = re.search(r'\{[\s\S]*\}', text)
     if m:
-        try:
-            return json.loads(m.group())
-        except:
-            pass
+        item = repair_json(m.group())
+        if item:
+            return item
     print(f"ERROR: 无法解析JSON:\n{text[:300]}")
     sys.exit(1)
 
 def build_prompt(prefix, cname, src, next_id):
     return f"""请生成一条关于"{cname}"的知识条目，基于真实权威信息（参考来源：{src}），严禁编造。
 
-直接输出以下JSON格式（不要markdown代码块）：
+直接输出以下JSON格式，确保JSON合法（所有字符串内的双引号用\\"转义，HTML标签内的属性用单引号）：
+
 {{"id": "{prefix}_{next_id:03d}", "cat": "{cname}", "title": "精简标题", "summary": "一句话简介", "detail": "<h4>小标题</h4><ul><li><b>步骤：</b>详细说明</li></ul>", "source": "具体来源", "tags": ["标签1","标签2"]}}
 
 要求：
 - title用一句话说清楚核心
 - summary用一句话简介
-- detail用HTML格式（h4标题+ul/li列表+b加粗），操作类必须有可复现的具体步骤
+- detail用HTML格式（h4标题+ul/li列表+b加粗），操作类必须有可复现的具体步骤，HTML属性用单引号
 - source必须标注具体来源
-- tags写2-3个标签"""
+- tags写2-3个标签
+- 输出的JSON必须是合法的、可以被Python json.loads直接解析的格式"""
 
 def generate_today(data):
     max_ids = get_max_ids(data)
