@@ -130,12 +130,27 @@ def parse_json(text):
     print(f"ERROR: 无法解析JSON:\n{text[:300]}")
     sys.exit(1)
 
-def build_prompt(prefix, cname, src, next_id):
-    return f"""请生成一条关于"{cname}"的知识条目，基于真实权威信息（参考来源：{src}），严禁编造。
+def get_existing_titles(data, prefix):
+    """收集某个分类下所有已发布知识的标题，用于避免重复"""
+    titles = []
+    for dk in list(data.get("knowledge", {}).values()) + list(data.get("archive", {}).values()):
+        for item in dk:
+            if item.get("id", "").startswith(prefix + "_"):
+                titles.append(item.get("title", ""))
+    return titles
+
+def build_prompt(prefix, cname, src, next_id, existing_titles=None):
+    prompt = f"""请生成一条关于"{cname}"的知识条目，基于真实权威信息（参考来源：{src}），严禁编造。
 
 直接输出以下JSON格式，确保JSON合法（所有字符串内的双引号用\\"转义，HTML标签内的属性用单引号）：
 
-{{"id": "{prefix}_{next_id:03d}", "cat": "{cname}", "title": "精简标题", "summary": "一句话简介", "detail": "<h4>小标题</h4><ul><li><b>步骤：</b>详细说明</li></ul>", "source": "具体来源", "tags": ["标签1","标签2"]}}
+{{"id": "{prefix}_{next_id:03d}", "cat": "{cname}", "title": "精简标题", "summary": "一句话简介", "detail": "<h4>小标题</h4><ul><li><b>步骤：</b>详细说明</li></ul>", "source": "具体来源", "tags": ["标签1","标签2"]}}"""
+    if existing_titles:
+        prompt += "\n\n⚠️ **重要：以下主题已经发布过了，请绝对避免生成大意相同或类似的内容：**\n"
+        for t in existing_titles:
+            prompt += f"- {t}\n"
+        prompt += "\n请选择一个全新、不重复的知识角度。即便例子不同但核心逻辑相同的也算重复。"
+    prompt += """
 
 要求：
 - title用一句话说清楚核心
@@ -144,14 +159,18 @@ def build_prompt(prefix, cname, src, next_id):
 - source必须标注具体来源
 - tags写2-3个标签
 - 输出的JSON必须是合法的、可以被Python json.loads直接解析的格式"""
+    return prompt
 
 def generate_today(data):
     max_ids = get_max_ids(data)
     today_items = []
     for prefix, cname, src in CATEGORIES:
         next_id = max_ids[prefix] + 1
-        prompt = build_prompt(prefix, cname, src, next_id)
+        existing = get_existing_titles(data, prefix)
+        prompt = build_prompt(prefix, cname, src, next_id, existing)
         print(f"  生成 [{cname}]...", end=" ", flush=True)
+        if existing:
+            print(f"(已有{len(existing)}条)")
         text = call_deepseek(prompt)
         item = parse_json(text)
         today_items.append(item)
