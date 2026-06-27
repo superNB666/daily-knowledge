@@ -163,7 +163,19 @@ def update_index(data):
     with open(INDEX_FILE, "r", encoding="utf-8") as f:
         html = f.read()
     json_str = json.dumps(data, ensure_ascii=False, indent=2)
-    html = re.sub(r'var DATA = \{[^{}]*\};', 'var DATA = ' + json_str + ';', html)
+    # 找到 var DATA = 的位置，然后通过大括号匹配找到结束位置
+    start = html.find("var DATA = ")
+    if start >= 0:
+        brace_depth = 0
+        i = html.find("{", start)
+        if i >= 0:
+            while i < len(html):
+                if html[i] == "{": brace_depth += 1
+                elif html[i] == "}": brace_depth -= 1
+                if brace_depth == 0:
+                    break
+                i += 1
+            html = html[:start] + "var DATA = " + json_str + ";" + html[i + 1:]
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(html)
     print("  已更新 index.html")
