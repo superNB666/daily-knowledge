@@ -54,7 +54,6 @@ def call_deepseek(prompt):
     global API_KEY
     if not API_KEY:
         print("ERROR: DEEPSEEK_KEY 未设置")
-        # Try to read from config.py if exists (for local testing)
         if os.path.exists("config.py"):
             try:
                 exec(open("config.py").read())
@@ -89,12 +88,10 @@ def parse_json(text):
     if text.startswith("```"):
         text = re.sub(r'^```(?:json)?\s*', '', text)
         text = re.sub(r'\s*```$', '', text)
-    # Try direct parse first
     try:
         return json.loads(text)
     except:
         pass
-    # Try find { ... }
     m = re.search(r'\{[\s\S]*\}', text)
     if m:
         try:
@@ -135,7 +132,7 @@ def update_index(data):
     with open(INDEX_FILE, "r", encoding="utf-8") as f:
         html = f.read()
     json_str = json.dumps(data, ensure_ascii=False, indent=2)
-    html = re.sub(r'var DATA = \{[\s\S]*?\};', 'var DATA = ' + json_str + ';', html)
+    html = re.sub(r'var DATA = \{[^{}]*\};', 'var DATA = ' + json_str + ';', html)
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(html)
     print("  已更新 index.html")
